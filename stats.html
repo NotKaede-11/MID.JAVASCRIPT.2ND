@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Score Analysis</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+    <link rel="icon" type="image/jpg" href="favicon/wintahh.jpg" />
+  </head>
+  <body>
+    <div id="background-container"></div>
+
+    <div id="loading" class="loading-container" style="display: none">
+      <div class="loading-spinner"></div>
+      <div class="loading-progress">
+        <div class="loading-progress-bar" style="width: 0%"></div>
+      </div>
+      <p>Processing data...</p>
+    </div>
+
+    <div class="container">
+      <div class="header">
+        <h1>Student Score Analysis</h1>
+        <div class="help-buttons">
+          <button id="helpBtn" class="help-btn" title="Get help">
+            <i class="fas fa-question-circle"></i> Help
+          </button>
+        </div>
+      </div>
+
+      <div class="project-description">
+        <p>
+          This project transforms raw student data into clear, actionable
+          insights using JavaScript. It reads and processes data from a CSV
+          file, cleans it, and performs analysis to highlight key trends in
+          student performance. With interactive charts and graphs, along with
+          features like error handling and CSV export, this project makes
+          complex data easy to understand and visually engaging.
+        </p>
+      </div>
+
+      <div class="file-input-container">
+        <div id="fileInfoPanel" class="file-info-panel">
+          <div class="file-info-header">
+            <i class="fas fa-file-alt"></i> Uploaded Files
+            <button
+              id="clearAllBtn"
+              class="clear-all-btn"
+              style="display: none"
+              data-tooltip="Remove all uploaded files"
+            >
+              <i class="fas fa-trash-alt"></i> Clear All
+            </button>
+          </div>
+          <div id="fileInfoContent" class="file-info-content">
+            No files uploaded yet
+          </div>
+        </div>
+
+        <div class="upload-panel">
+          <div class="upload-button-area">
+            <div class="file-list" id="fileList"></div>
+            <div class="file-actions">
+              <button
+                id="uploadBtn"
+                class="upload-btn"
+                data-tooltip="Upload CSV or Excel files (.csv, .xlsx, .xls)"
+              >
+                <i class="fas fa-file-upload"></i> Upload File
+              </button>
+              <input
+                type="file"
+                id="fileInput"
+                accept=".csv,.xlsx,.xls"
+                multiple
+              />
+            </div>
+          </div>
+        </div>
+
+        <div id="fileStatusPanel" class="file-status-panel">
+          <div class="file-status-indicator">
+            <i class="fas fa-circle-info"></i>
+            <span id="fileStatusMessage">
+              Ready to upload - no files selected
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div id="column-selection" class="column-selection" style="display: none">
+        <h3>Select Columns for Analysis</h3>
+        <div class="column-selectors">
+          <div class="column-selector">
+            <label for="genderColumn">Gender Column:</label>
+            <select id="genderColumn"></select>
+          </div>
+          <div class="column-selector">
+            <label for="scoreColumn">Score Column:</label>
+            <select id="scoreColumn"></select>
+          </div>
+        </div>
+        <button id="analyzeBtn" class="analyze-btn">
+          <i class="fas fa-chart-bar"></i> Analyze Data
+        </button>
+      </div>
+
+      <div
+        id="validation-summary"
+        class="validation-summary"
+        style="display: none"
+      >
+        <h3>Data Validation Summary</h3>
+        <div id="validation-details"></div>
+      </div>
+
+      <div id="error-message" class="error-message"></div>
+
+      <div id="results" class="results-container" style="display: none">
+        <div class="results-grid">
+          <div class="chart-container">
+            <canvas id="midtermChart"></canvas>
+          </div>
+
+          <div class="calculation-container">
+            <h3>Calculation Method</h3>
+            <div id="calculation-details"></div>
+            <button
+              class="insights-trigger"
+              id="insightsBtn"
+              data-tooltip="View detailed analysis insights"
+            >
+              <i class="fas fa-lightbulb"></i> View Insights
+            </button>
+          </div>
+
+          <div id="insights-popup" class="insights-popup">
+            <div class="insights-content">
+              <button class="insights-close" id="closeInsights">
+                <i class="fas fa-times"></i>
+              </button>
+              <div class="insights-header">
+                <h2>Analysis Insights</h2>
+              </div>
+              <div id="insights"></div>
+            </div>
+          </div>
+
+          <div class="summary-container">
+            <h3>Summary</h3>
+            <div class="summary-charts">
+              <div class="chart-row">
+                <div
+                  class="summary-chart-container"
+                  data-tooltip="Distribution of students by gender"
+                >
+                  <canvas id="genderDistributionChart"></canvas>
+                </div>
+                <div
+                  class="summary-chart-container"
+                  data-tooltip="Distribution of scores across different ranges"
+                >
+                  <canvas id="scoreDistributionChart"></canvas>
+                </div>
+              </div>
+              <div class="chart-row">
+                <div
+                  class="summary-chart-container"
+                  data-tooltip="Comparison of minimum, average, and maximum scores"
+                >
+                  <canvas id="scoreRangeChart"></canvas>
+                </div>
+              </div>
+            </div>
+            <div id="summary"></div>
+          </div>
+        </div>
+
+        <div class="export-options">
+          <button
+            id="exportDataBtn"
+            class="export-btn"
+            data-tooltip="Download data as CSV file"
+          >
+            <i class="fas fa-download"></i> Export Data
+          </button>
+          <button
+            id="exportChartBtn"
+            class="export-btn"
+            data-tooltip="Save chart as PNG image"
+          >
+            <i class="fas fa-image"></i> Export Chart
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="helpModal" class="modal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <div class="help-tabs">
+          <button class="tab-button active" data-tab="guide">Guide</button>
+          <button class="tab-button" data-tab="tutorial">Tutorial</button>
+          <button class="tab-button" data-tab="faq">FAQ</button>
+        </div>
+
+        <div id="guide" class="tab-content active">
+          <h2>Help Guide</h2>
+          <div class="help-content">
+            <h3>Getting Started</h3>
+            <p>
+              This tool analyzes student scores by gender from Excel or CSV
+              files.
+            </p>
+
+            <h3>File Requirements</h3>
+            <p>Your file should include the following columns:</p>
+            <ul>
+              <li><strong>Gender</strong> - Student gender (Male/Female)</li>
+              <li><strong>Score</strong> - Numerical score value</li>
+            </ul>
+
+            <h3>Data Validation</h3>
+            <p>
+              The system will automatically validate your data and report any
+              issues found, including:
+            </p>
+            <ul>
+              <li>Missing required columns</li>
+              <li>Invalid data types</li>
+              <li>Missing values</li>
+              <li>Outliers in scores</li>
+            </ul>
+
+            <h3>Features</h3>
+            <ul>
+              <li>
+                <strong>Data Cleaning:</strong> Automatically handles missing or
+                invalid data
+              </li>
+              <li>
+                <strong>Visualization:</strong> Interactive bar chart comparing
+                average scores by gender
+              </li>
+              <li>
+                <strong>Insights:</strong> Automated analysis of gender
+                performance differences
+              </li>
+              <li>
+                <strong>Export:</strong> Download the analyzed data or chart
+                image
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div id="tutorial" class="tab-content">
+          <h2>Interactive Tutorial</h2>
+          <div class="tutorial-steps">
+            <div class="tutorial-step">
+              <h3>Step 1: Upload Your Data</h3>
+              <p>
+                Start by uploading your Excel or CSV file containing student
+                scores:
+              </p>
+              <ul>
+                <li>
+                  Click the "Upload File" button or drag and drop your file
+                </li>
+                <li>Ensure your file has gender and score columns</li>
+                <li>Supported formats: .csv, .xlsx, .xls</li>
+              </ul>
+              <button class="tutorial-btn" data-action="upload">Try It</button>
+            </div>
+
+            <div class="tutorial-step">
+              <h3>Step 2: Analyze Data</h3>
+              <p>Once your file is uploaded:</p>
+              <ul>
+                <li>Click "Analyze" to process the data</li>
+                <li>The system will automatically detect relevant columns</li>
+                <li>View the generated charts and insights</li>
+              </ul>
+              <button class="tutorial-btn" data-action="analyze">
+                See Example
+              </button>
+            </div>
+
+            <div class="tutorial-step">
+              <h3>Step 3: Explore Results</h3>
+              <p>Understand your analysis:</p>
+              <ul>
+                <li>Compare average scores by gender</li>
+                <li>View score distribution patterns</li>
+                <li>Check statistical insights</li>
+              </ul>
+              <button class="tutorial-btn" data-action="explore">
+                Learn More
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="faq" class="tab-content">
+          <h2>Frequently Asked Questions</h2>
+          <div class="faq-list">
+            <div class="faq-item">
+              <div class="faq-question">
+                <i class="fas fa-chevron-right"></i>
+                What file formats are supported?
+              </div>
+              <div class="faq-answer">
+                The system supports CSV (.csv) and Excel (.xlsx, .xls) files.
+                Make sure your file includes columns for gender and score data.
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                <i class="fas fa-chevron-right"></i>
+                How does the automatic column detection work?
+              </div>
+              <div class="faq-answer">
+                The system looks for column headers containing keywords like
+                "gender", "sex" for gender data, and "score", "grade", "mark"
+                for score data. Make sure your columns have clear headers.
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                <i class="fas fa-chevron-right"></i>
+                What gender formats are recognized?
+              </div>
+              <div class="faq-answer">
+                The system recognizes "M"/"F", "Male"/"Female", and
+                "Boy"/"Girl". Other values will be flagged as invalid.
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                <i class="fas fa-chevron-right"></i>
+                Can I export my analysis results?
+              </div>
+              <div class="faq-answer">
+                Yes! Use the "Export Data" button to download a CSV file of your
+                data, or "Export Chart" to save the visualization as an image.
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                <i class="fas fa-chevron-right"></i>
+                What do the different insight colors mean?
+              </div>
+              <div class="faq-answer">
+                <ul>
+                  <li>
+                    Blue (Minor): Small differences or general information
+                  </li>
+                  <li>
+                    Orange (Moderate): Notable differences that may need
+                    attention
+                  </li>
+                  <li>
+                    Red (Significant): Large differences that require
+                    investigation
+                  </li>
+                  <li>Yellow (Warning): Data quality or sample size issues</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="javascript/script.js"></script>
+  </body>
+</html>
